@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendingDown, Plus, Trash2 } from 'lucide-react';
+import { TrendingDown, Plus, Trash2, Pencil, X } from 'lucide-react';
 import { getPhilippineDateString } from '../lib/dateUtils';
 import { getWeightLogs, addWeightLog, deleteWeightLog } from '../lib/storage';
 
@@ -7,6 +7,7 @@ export default function WeightLog() {
   const [logs, setLogs] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
+  const [editingDate, setEditingDate] = useState(null);
   const dateStr = getPhilippineDateString();
 
   useEffect(() => {
@@ -19,9 +20,21 @@ export default function WeightLog() {
   const handleAdd = async () => {
     const kg = parseFloat(input);
     if (isNaN(kg) || kg < 20 || kg > 200) return;
-    const updated = await addWeightLog(dateStr, kg);
+    const targetDate = editingDate || dateStr;
+    const updated = await addWeightLog(targetDate, kg);
     setLogs(updated);
     setInput('');
+    setEditingDate(null);
+  };
+
+  const handleEdit = (log) => {
+    setInput(String(log.kg));
+    setEditingDate(log.date);
+  };
+
+  const cancelEdit = () => {
+    setInput('');
+    setEditingDate(null);
   };
 
   const handleDelete = async (date) => {
@@ -84,7 +97,18 @@ export default function WeightLog() {
 
       {/* Log Input */}
       <div className="rounded-2xl p-4 shadow-[var(--shadow-card)] animate-fade-in-up stagger-3" style={{ backgroundColor: 'white' }}>
-        <p className="section-label mb-3">Log today's weight</p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="section-label">
+            {editingDate
+              ? `Editing ${new Date(editingDate + 'T00:00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}`
+              : "Log today's weight"}
+          </p>
+          {editingDate && (
+            <button onClick={cancelEdit} className="text-ink-faint hover:text-terracotta transition-colors [-webkit-tap-highlight-color:transparent]">
+              <X size={16} />
+            </button>
+          )}
+        </div>
         <div className="flex gap-2">
           <input
             type="number"
@@ -101,7 +125,7 @@ export default function WeightLog() {
             className="px-4 py-2.5 rounded-xl bg-sage text-white text-sm font-semibold shadow-[0_2px_8px_rgba(122,158,126,0.3)] hover:shadow-[0_4px_12px_rgba(122,158,126,0.4)] disabled:opacity-30 transition-all flex items-center gap-1.5"
           >
             <Plus size={14} />
-            Log
+            {editingDate ? 'Save' : 'Log'}
           </button>
         </div>
       </div>
@@ -118,7 +142,9 @@ export default function WeightLog() {
               const formatted = d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', weekday: 'short' });
               const diff = startWeight ? log.kg - startWeight : 0;
               return (
-                <div key={log.date} className="flex items-center justify-between px-4 py-2.5 border-b border-border/30 last:border-b-0">
+                <div key={log.date} className={`flex items-center justify-between px-4 py-2.5 border-b border-border/30 last:border-b-0 transition-colors ${
+                  editingDate === log.date ? 'bg-sage-pale' : ''
+                }`}>
                   <span className="text-[13px] text-ink-muted">{formatted}</span>
                   <div className="flex items-center gap-2">
                     <span className="font-display text-base font-semibold text-ink">{log.kg} kg</span>
@@ -129,6 +155,12 @@ export default function WeightLog() {
                         {diff > 0 ? '+' : ''}{diff.toFixed(1)}
                       </span>
                     )}
+                    <button
+                      onClick={() => handleEdit(log)}
+                      className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-sage-pale text-ink-faint hover:text-sage transition-colors [-webkit-tap-highlight-color:transparent]"
+                    >
+                      <Pencil size={12} />
+                    </button>
                     <button
                       onClick={() => handleDelete(log.date)}
                       className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-terra-pale text-ink-faint hover:text-terracotta transition-colors [-webkit-tap-highlight-color:transparent]"

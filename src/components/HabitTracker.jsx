@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Check, Flame, Trophy } from 'lucide-react';
+import { Check, Flame, Trophy, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getPhilippineDateString, getDaysRemaining, getDayNumber, generateCalendarDays, HABITS } from '../lib/dateUtils';
 import { getDailyLog, upsertDailyLog } from '../lib/storage';
 
@@ -8,28 +8,33 @@ export default function HabitTracker() {
   const [checkedDays, setCheckedDays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastToggled, setLastToggled] = useState(null);
-  const dateStr = getPhilippineDateString();
+  const todayStr = getPhilippineDateString();
+  const [selectedDate, setSelectedDate] = useState(todayStr);
   const daysRemaining = getDaysRemaining();
-  const dayNumber = getDayNumber();
+  const selectedDayNumber = getDayNumber(selectedDate);
   const calendarDays = generateCalendarDays();
+  const isToday = selectedDate === todayStr;
 
-  const loadData = useCallback(async () => {
-    const log = await getDailyLog(dateStr);
-    setHabits(log.habits || [false, false, false, false, false, false]);
-
+  const loadCheckedDays = useCallback(async () => {
     const checked = [];
     for (const day of calendarDays) {
-      if (day > dateStr) break;
+      if (day > todayStr) break;
       const dayLog = await getDailyLog(day);
       if (dayLog.habits && dayLog.habits.every(h => h === true)) {
         checked.push(day);
       }
     }
     setCheckedDays(checked);
-    setLoading(false);
-  }, [dateStr]);
+  }, [todayStr]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  const loadSelectedDay = useCallback(async () => {
+    const log = await getDailyLog(selectedDate);
+    setHabits(log.habits || [false, false, false, false, false, false]);
+    setLoading(false);
+  }, [selectedDate]);
+
+  useEffect(() => { loadCheckedDays(); }, [loadCheckedDays]);
+  useEffect(() => { loadSelectedDay(); }, [loadSelectedDay]);
 
   const toggleHabit = async (index) => {
     const updated = [...habits];
@@ -37,14 +42,32 @@ export default function HabitTracker() {
     setHabits(updated);
     setLastToggled(index);
     setTimeout(() => setLastToggled(null), 250);
-    await upsertDailyLog(dateStr, { habits: updated });
+    await upsertDailyLog(selectedDate, { habits: updated });
 
     const allDone = updated.every(h => h);
     setCheckedDays(prev => {
-      if (allDone && !prev.includes(dateStr)) return [...prev, dateStr];
-      if (!allDone && prev.includes(dateStr)) return prev.filter(d => d !== dateStr);
+      if (allDone && !prev.includes(selectedDate)) return [...prev, selectedDate];
+      if (!allDone && prev.includes(selectedDate)) return prev.filter(d => d !== selectedDate);
       return prev;
     });
+  };
+
+  const goToPreviousDay = () => {
+    const idx = calendarDays.indexOf(selectedDate);
+    if (idx > 0) setSelectedDate(calendarDays[idx - 1]);
+  };
+
+  const goToNextDay = () => {
+    const idx = calendarDays.indexOf(selectedDate);
+    if (idx < calendarDays.length - 1 && calendarDays[idx + 1] <= todayStr) {
+      setSelectedDate(calendarDays[idx + 1]);
+    }
+  };
+
+  const formatSelectedDate = () => {
+    if (isToday) return 'Today';
+    const d = new Date(selectedDate + 'T00:00:00');
+    return d.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
   const getStreak = () => {
@@ -105,10 +128,26 @@ export default function HabitTracker() {
         />
       </div>
 
-      {/* Today's Habits */}
+      {/* Habits with Date Navigation */}
       <div className="rounded-2xl shadow-[var(--shadow-card)] overflow-hidden animate-fade-in-up stagger-3" style={{ backgroundColor: 'white' }}>
         <div className="px-4 py-3 flex items-center justify-between">
-          <p className="text-sm font-semibold text-ink">Day {dayNumber} — Today's Habits</p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={goToPreviousDay}
+              disabled={calendarDays.indexOf(selectedDate) === 0}
+              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-cream transition-colors disabled:opacity-30 [-webkit-tap-highlight-color:transparent]"
+            >
+              <ChevronLeft size={16} className="text-ink-muted" />
+            </button>
+            <p className="text-sm font-semibold text-ink">Day {selectedDayNumber} — {formatSelectedDate()}</p>
+            <button
+              onClick={goToNextDay}
+              disabled={isToday}
+              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-cream transition-colors disabled:opacity-30 [-webkit-tap-highlight-color:transparent]"
+            >
+              <ChevronRight size={16} className="text-ink-muted" />
+            </button>
+          </div>
           {allComplete && (
             <span className="flex items-center gap-1 text-[10px] font-semibold text-sage bg-sage-pale px-2 py-1 rounded-full uppercase tracking-wide">
               <Trophy size={10} /> Done
@@ -143,25 +182,30 @@ export default function HabitTracker() {
         <div className="grid grid-cols-7 gap-1.5">
           {calendarDays.map((day) => {
             const dayNum = parseInt(day.split('-')[2]);
-            const isToday = day === dateStr;
+            const isDayToday = day === todayStr;
+            const isSelected = day === selectedDate;
             const isComplete = checkedDays.includes(day);
-            const isFuture = day > dateStr;
+            const isFuture = day > todayStr;
 
             return (
-              <div
+              <button
                 key={day}
-                className={`w-full aspect-square rounded-lg flex items-center justify-center text-[11px] font-semibold transition-all ${
+                disabled={isFuture}
+                onClick={() => !isFuture && setSelectedDate(day)}
+                className={`w-full aspect-square rounded-lg flex items-center justify-center text-[11px] font-semibold transition-all [-webkit-tap-highlight-color:transparent] ${
                   isComplete
-                    ? 'bg-sage text-white'
-                    : isToday
-                      ? 'ring-1.5 ring-sage bg-sage-pale text-sage'
-                      : isFuture
-                        ? 'bg-cream/60 text-ink-faint'
-                        : 'bg-white text-ink-muted shadow-[0_1px_3px_rgba(30,30,26,0.04)]'
+                    ? `bg-sage text-white ${isSelected ? 'ring-2 ring-ink/20' : ''}`
+                    : isSelected
+                      ? 'ring-2 ring-sage bg-sage-pale text-sage'
+                      : isDayToday
+                        ? 'ring-1.5 ring-sage/40 bg-sage-pale/50 text-sage'
+                        : isFuture
+                          ? 'bg-cream/60 text-ink-faint cursor-default'
+                          : 'bg-white text-ink-muted shadow-[0_1px_3px_rgba(30,30,26,0.04)]'
                 }`}
               >
                 {dayNum}
-              </div>
+              </button>
             );
           })}
         </div>

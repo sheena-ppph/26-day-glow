@@ -58,27 +58,39 @@ export default function FastTimer() {
       <div className="w-full grid grid-cols-2 gap-3 animate-fade-in-up stagger-3">
         <div className={`rounded-2xl p-4 transition-shadow ${
           !isFasting
-            ? 'shadow-[var(--shadow-card-hover)] ring-1 ring-sage/20'
-            : 'shadow-[var(--shadow-card)]'
-        }`} style={{ backgroundColor: 'white' }}>
+            ? 'shadow-[var(--shadow-card-hover)] ring-2 ring-sage/50 bg-sage/5'
+            : 'shadow-[var(--shadow-card)] bg-white'
+        }`}>
           <div className="flex items-center gap-1.5 mb-2">
             <Sun size={12} className="text-sage" />
             <span className="section-label">Eating</span>
           </div>
           <p className="font-display text-xl font-bold text-ink leading-tight">11:00 AM</p>
           <p className="text-[11px] text-ink-faint mt-0.5">to 7:00 PM</p>
+          {!isFasting && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-sage animate-pulse" />
+              <span className="text-[9px] font-bold tracking-widest uppercase text-sage">Active</span>
+            </div>
+          )}
         </div>
         <div className={`rounded-2xl p-4 transition-shadow ${
           isFasting
-            ? 'shadow-[var(--shadow-card-hover)] ring-1 ring-terracotta/20'
-            : 'shadow-[var(--shadow-card)]'
-        }`} style={{ backgroundColor: 'white' }}>
+            ? 'shadow-[var(--shadow-card-hover)] ring-2 ring-terracotta/50 bg-terracotta/5'
+            : 'shadow-[var(--shadow-card)] bg-white'
+        }`}>
           <div className="flex items-center gap-1.5 mb-2">
             <Moon size={12} className="text-terracotta" />
             <span className="section-label">Fasting</span>
           </div>
           <p className="font-display text-xl font-bold text-ink leading-tight">7:00 PM</p>
           <p className="text-[11px] text-ink-faint mt-0.5">to 11:00 AM</p>
+          {isFasting && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-terracotta animate-pulse" />
+              <span className="text-[9px] font-bold tracking-widest uppercase text-terracotta">Active</span>
+            </div>
+          )}
         </div>
       </div>
 

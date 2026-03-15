@@ -24,8 +24,14 @@ export function getDaysRemaining() {
   return Math.max(0, Math.ceil(diff / 86400000));
 }
 
-export function getDayNumber() {
-  const today = getPhilippineNow();
+export function getDayNumber(dateStr) {
+  let today;
+  if (dateStr) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    today = new Date(y, m - 1, d);
+  } else {
+    today = getPhilippineNow();
+  }
   today.setHours(0, 0, 0, 0);
   const start = new Date(START_DATE);
   start.setHours(0, 0, 0, 0);
