@@ -72,7 +72,7 @@ export default function HabitTracker() {
 
   const getStreak = () => {
     let streak = 0;
-    const today = dateStr;
+    const today = todayStr;
     const sorted = [...checkedDays].sort().reverse();
     for (let i = 0; i < calendarDays.length; i++) {
       const dayIdx = calendarDays.indexOf(today) - i;
