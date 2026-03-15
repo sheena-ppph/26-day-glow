@@ -1,10 +1,10 @@
-const CACHE_NAME = '26dayglow-v1';
+const CACHE_NAME = '26dayglow-v4';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
 ];
 
-// Install — precache shell
+// Install — precache shell, skip waiting immediately
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
@@ -12,14 +12,13 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate — clean old caches
+// Activate — delete ALL old caches, claim clients immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 // Fetch — network first, fallback to cache
