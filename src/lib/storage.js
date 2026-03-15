@@ -157,7 +157,9 @@ export async function getMealPlan(dayOfWeek) {
     } catch {}
   }
   const cached = localGet(`meals_${dayOfWeek}`);
-  if (cached) return cached;
+  if (cached && Array.isArray(cached) && cached.length === 3 && cached.every(m => m.name)) {
+    return cached;
+  }
   return DEFAULT_MEALS[dayOfWeek] || DEFAULT_MEALS[0];
 }
 

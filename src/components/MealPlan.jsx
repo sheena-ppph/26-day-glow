@@ -31,6 +31,7 @@ export default function MealPlan() {
     setEditingMeal(null);
   };
 
+  const MEAL_TYPES = ['Lunch', 'Snack', 'Dinner'];
   const typeColor = (type) => {
     switch (type) {
       case 'Lunch': return 'bg-sage-pale text-sage';
@@ -73,8 +74,8 @@ export default function MealPlan() {
               <div className="px-4 py-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${typeColor(meal.type)} mb-1.5`}>
-                      {meal.type}
+                    <span className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${typeColor(MEAL_TYPES[i])} mb-1.5`}>
+                      {MEAL_TYPES[i]}
                     </span>
                     <h3 className="font-display text-[15px] font-semibold text-ink leading-snug">{meal.name}</h3>
                     <div className="flex items-center gap-1 text-[11px] text-ink-faint mt-1">
