@@ -157,10 +157,13 @@ export async function getMealPlan(dayOfWeek) {
     } catch {}
   }
   const cached = localGet(`meals_${dayOfWeek}`);
+  const defaults = DEFAULT_MEALS[dayOfWeek] || DEFAULT_MEALS[0];
   if (cached && Array.isArray(cached) && cached.length === 3 && cached.every(m => m.name)) {
     return cached;
   }
-  return DEFAULT_MEALS[dayOfWeek] || DEFAULT_MEALS[0];
+  // Auto-recover: corrupted cache, reset to defaults
+  localSet(`meals_${dayOfWeek}`, defaults);
+  return defaults;
 }
 
 export async function updateMeal(dayOfWeek, mealIndex, mealData) {
