@@ -1,4 +1,4 @@
-const CACHE_NAME = '26dayglow-v8';
+const CACHE_NAME = '26dayglow-v9';
 const PRECACHE_URLS = [
   '/',
   '/index.html',

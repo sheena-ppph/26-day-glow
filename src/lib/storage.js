@@ -143,6 +143,8 @@ const DEFAULT_MEALS = {
 };
 
 export async function getMealPlan(dayOfWeek) {
+  const defaults = DEFAULT_MEALS[dayOfWeek] || DEFAULT_MEALS[0];
+
   if (supabase) {
     try {
       const { data, error } = await supabase
@@ -150,25 +152,28 @@ export async function getMealPlan(dayOfWeek) {
         .select('*')
         .eq('day_of_week', dayOfWeek)
         .order('meal_index', { ascending: true });
-      if (!error && data && data.length > 0) {
-        localSet(`meals_${dayOfWeek}`, data);
-        return data.map(d => ({ name: d.name, description: d.description, time: d.time, type: d.type, tags: d.tags || [] }));
+      if (!error && data && data.length === 3) {
+        const meals = data.map(d => ({ name: d.name, time: d.time }));
+        localSet(`meals_${dayOfWeek}`, meals);
+        return meals;
       }
     } catch {}
   }
+
   const cached = localGet(`meals_${dayOfWeek}`);
-  const defaults = DEFAULT_MEALS[dayOfWeek] || DEFAULT_MEALS[0];
   if (cached && Array.isArray(cached) && cached.length === 3 && cached.every(m => m.name)) {
     return cached;
   }
-  // Auto-recover: corrupted cache, reset to defaults
-  localSet(`meals_${dayOfWeek}`, defaults);
-  return defaults;
+  // Auto-recover: corrupted or incomplete, reset to defaults
+  const simplified = defaults.map(m => ({ name: m.name, time: m.time }));
+  localSet(`meals_${dayOfWeek}`, simplified);
+  return simplified;
 }
 
 export async function updateMeal(dayOfWeek, mealIndex, mealData) {
+  const TYPES = ['Lunch', 'Snack', 'Dinner'];
   const meals = await getMealPlan(dayOfWeek);
-  meals[mealIndex] = { ...meals[mealIndex], ...mealData };
+  meals[mealIndex] = { name: mealData.name || meals[mealIndex].name, time: mealData.time || meals[mealIndex].time };
   localSet(`meals_${dayOfWeek}`, meals);
 
   if (supabase) {
@@ -179,10 +184,8 @@ export async function updateMeal(dayOfWeek, mealIndex, mealData) {
           day_of_week: dayOfWeek,
           meal_index: mealIndex,
           name: meals[mealIndex].name,
-          description: meals[mealIndex].description,
           time: meals[mealIndex].time,
-          type: meals[mealIndex].type,
-          tags: meals[mealIndex].tags,
+          type: TYPES[mealIndex],
         }, { onConflict: 'day_of_week,meal_index' });
     } catch {}
   }
